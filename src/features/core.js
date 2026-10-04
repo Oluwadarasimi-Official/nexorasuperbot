@@ -15,7 +15,8 @@ const WELCOME =
   '👋 <b>Welcome to NexoraSuperBot.</b>\n\n' +
   'Your AI-powered command center inside Telegram.\n\n' +
   'Ask questions, study, code, research, analyze files, manage tasks, create content and more — all from one place.\n\n' +
-  '👇 <b>Choose where to start:</b>';
+  '👇 <b>Choose where to start:</b>\n\n' +
+  '🛠 <i>Built by David Oluwadarasimi</i>';
 
 async function showHome(ctx) {
   await editOrReply(ctx, WELCOME, mainMenu());
@@ -36,7 +37,7 @@ function register(bot) {
     if (isNew) {
       await sendLong(ctx, WELCOME, mainMenu());
     } else {
-      await sendLong(ctx, `👋 Welcome back, <b>${escapeHtml(ctx.from.first_name || 'friend')}</b>!\n\nWhat are we doing today?`, mainMenu());
+      await sendLong(ctx, `👋 Welcome back, <b>${escapeHtml(ctx.from.first_name || 'friend')}</b>!\n\nWhat are we doing today?\n\n🛠 <i>Built by David Oluwadarasimi</i>`, mainMenu());
     }
   });
 
