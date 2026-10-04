@@ -8,10 +8,33 @@ const { createClient } = require('@supabase/supabase-js');
 const { cfg } = require('./config');
 
 let client = null;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Resilient fetch: the Supabase endpoint occasionally drops connections,
+   so retry transient network/5xx failures before giving up. */
+async function resilientFetch(url, opts) {
+  let lastErr = null;
+  for (let a = 0; a < 3; a++) {
+    try {
+      const res = await fetch(url, opts);
+      if (res.status >= 500 && a < 2) { await sleep(500 * (a + 1)); continue; }
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (a < 2) await sleep(500 * (a + 1));
+    }
+  }
+  throw lastErr;
+}
+
 function supa() {
   if (!client) {
     if (!cfg.supabaseUrl || !cfg.supabaseKey) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY not set.');
-    client = createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false } });
+    client = createClient(cfg.supabaseUrl, cfg.supabaseKey, {
+      auth: { persistSession: false },
+      global: { fetch: resilientFetch },
+    });
   }
   return client;
 }

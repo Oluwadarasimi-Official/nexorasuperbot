@@ -40,7 +40,7 @@ async function genImage(ctx, brief) {
     await ctx.replyWithPhoto({ source: buf }, { caption: `🎨 <i>${escapeHtml(brief)}</i>`, parse_mode: 'HTML' });
   } catch (err) {
     await ctx.reply('⚠️ Image generation failed — please try again in a moment.');
-    throw err;
+    return; // user already got a friendly message; don't trigger a second one
   } finally {
     try { await ctx.telegram.deleteMessage(ctx.chat.id, thinking.message_id); } catch { /* best effort */ }
   }
