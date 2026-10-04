@@ -57,7 +57,7 @@ function register(bot) {
       '<b>Dev</b>: /code /debug /review /explain_code\n' +
       '<b>Research</b>: /research &lt;topic&gt;\n' +
       '<b>Productivity</b>: /todo /note /remind /plan /goals\n' +
-      '<b>Creative</b>: /caption /prompt /ideas /brand\n' +
+      '<b>Creative</b>: /caption /prompt /imagine /ideas /brand\n' +
       '<b>Tools</b>: /calc /convert /currency /qr /json /password /timestamp\n' +
       '<b>Other</b>: /menu /settings /cancel\n\n' +
       '📎 Send me voice notes, photos, PDFs or documents — I understand them all.',

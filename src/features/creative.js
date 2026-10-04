@@ -4,6 +4,7 @@
  */
 const store = require('../store');
 const { chatReply } = require('./ai');
+const { generateImage } = require('../ai/images');
 const { withThinking, sendLong, escapeHtml, answerCb, editOrReply } = require('../tg/helpers');
 const { menuKeyboard } = require('../tg/keyboards');
 
@@ -31,6 +32,19 @@ async function genBrand(ctx, brief) {
   await withThinking(ctx, () => chatReply(ctx.from.id,
     `Create a mini brand kit for: ${brief}. Include: 8 name ideas (bolded), 5 slogans/taglines, suggested brand voice (1 line), and 3 color-mood directions. Keep it sharp.`));
 }
+async function genImage(ctx, brief) {
+  store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'imagine', success: true });
+  const thinking = await ctx.reply('🎨 Generating your image — one moment...');
+  try {
+    const buf = await generateImage(brief);
+    await ctx.replyWithPhoto({ source: buf }, { caption: `🎨 <i>${escapeHtml(brief)}</i>`, parse_mode: 'HTML' });
+  } catch (err) {
+    await ctx.reply('⚠️ Image generation failed — please try again in a moment.');
+    throw err;
+  } finally {
+    try { await ctx.telegram.deleteMessage(ctx.chat.id, thinking.message_id); } catch { /* best effort */ }
+  }
+}
 
 function register(bot) {
   bot.command('caption', async (ctx) => {
@@ -56,14 +70,21 @@ function register(bot) {
     await genBrand(ctx, brief);
   });
 
+  bot.command('imagine', async (ctx) => {
+    const brief = cmdText(ctx);
+    if (!brief) return ctx.reply('🎨 Describe the image to generate: e.g.\n<code>/imagine A ginger cat on a grassland at golden hour</code>', { parse_mode: 'HTML' });
+    await genImage(ctx, brief);
+  });
+
   const hint = (title, usage) => async (ctx) => {
     await answerCb(ctx);
     await editOrReply(ctx, `${title}\n\n${usage}`, { parse_mode: 'HTML', ...menuKeyboard('creative') });
   };
   bot.action('cre:caption', hint('📸 <b>Caption writer</b>', '<code>/caption &lt;what is the post about?&gt;</code>'));
-  bot.action('cre:prompt', hint('🖼 <b>Image prompt engineer</b>', '<code>/prompt &lt;describe the image&gt;</code> — optimized for Midjourney / DALL-E / Flux.'));
+  bot.action('cre:prompt', hint('🖼 <b>Image prompt engineer</b>', '<code>/prompt &lt;describe the image&gt;</code> — optimized for Midjourney / DALL-E / Flux.\n<code>/imagine &lt;describe the image&gt;</code> — generate the actual image right here. 🪄'));
+  bot.action('cre:imagine', hint('🎨 <b>Image generator</b>', '<code>/imagine &lt;describe the image&gt;</code> — I generate the real image for you.'));
   bot.action('cre:ideas', hint('💡 <b>Idea generator</b>', '<code>/ideas &lt;topic&gt;</code> — 10 sharp, specific ideas.'));
   bot.action('cre:brand', hint('🏷 <b>Brand kit</b>', '<code>/brand &lt;what is the brand about?&gt;</code> — names, slogans, voice, colors.'));
 }
 
-module.exports = { register, genCaption, genPrompt, genIdeas, genBrand };
+module.exports = { register, genCaption, genPrompt, genIdeas, genBrand, genImage };

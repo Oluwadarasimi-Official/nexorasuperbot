@@ -59,6 +59,7 @@ const MENUS = {
   creative: [
     ['📸 Caption', 'cre:caption'], ['🖼 Image prompt', 'cre:prompt'],
     ['💡 Ideas', 'cre:ideas'], ['🏷 Brand kit', 'cre:brand'],
+    ['🎨 Generate image', 'cre:imagine'],
   ],
   tools: [
     ['🧮 Calculator', 'tool:calc'], ['📐 Convert units', 'tool:convert'],
