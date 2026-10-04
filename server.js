@@ -16,7 +16,14 @@ const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
   if (url === '/api/health' || url === '/health' || url === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, service: 'nexorasuperbot', polling: pollingActive, ts: new Date().toISOString() }));
+    res.end(JSON.stringify({
+      ok: true,
+      service: 'nexorasuperbot',
+      polling: pollingActive,
+      has_token: Boolean(cfg.botToken), // boolean only — the value never leaves the server
+      has_ai_key: Boolean(cfg.aiApiKey),
+      ts: new Date().toISOString(),
+    }));
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false }));
