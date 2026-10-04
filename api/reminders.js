@@ -1,7 +1,8 @@
 'use strict';
 /**
  * Cron endpoint: delivers due reminders.
- * Vercel cron hits this every 5 minutes (see vercel.json).
+ * Vercel Hobby only allows daily crons (see vercel.json); reminders are also
+ * delivered opportunistically on every incoming Telegram message (webhook.js).
  * Protect with ?key=<CRON_SECRET>.
  */
 const { Telegraf } = require('telegraf');

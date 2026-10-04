@@ -6,8 +6,24 @@
 const { createBot } = require('../src/bot');
 const { cfg } = require('../src/config');
 const { logEvent } = require('../src/logger');
+const { Telegraf } = require('telegraf');
+const { processDueReminders } = require('../src/features/productivity');
 
 let bot = null;
+let tg = null;
+
+function telegram() {
+  if (!tg) tg = new Telegraf(cfg.botToken).telegram;
+  return tg;
+}
+
+// Vercel Hobby only allows daily crons, so reminders are also delivered
+// opportunistically on every incoming message as a backstop.
+function deliverDueReminders() {
+  return processDueReminders((userId, html) =>
+    telegram().sendMessage(userId, html, { parse_mode: 'HTML', disable_web_page_preview: true })
+  ).catch((e) => logEvent('webhook_reminder_error', { error: String(e?.message || e).slice(0, 120) }));
+}
 
 module.exports = async (req, res) => {
   try {
@@ -18,7 +34,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (!bot) bot = createBot();
-    await bot.handleUpdate(req.body, res);
+    await Promise.all([bot.handleUpdate(req.body, res), deliverDueReminders()]);
     if (!res.headersSent) res.status(200).end();
   } catch (err) {
     logEvent('webhook_error', { error: String(err?.message || err).slice(0, 200) });

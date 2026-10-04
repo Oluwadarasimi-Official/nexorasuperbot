@@ -1,1 +1,1 @@
-{"crons":[{"path":"/api/reminders","schedule":"*/5 * * * *"}],"functions":{"api/reminders.js":{"maxDuration":60},"api/setup-webhook.js":{"maxDuration":30},"api/webhook.js":{"maxDuration":60}},"version":2}
+{"crons":[{"path":"/api/reminders","schedule":"0 6 * * *"}],"functions":{"api/reminders.js":{"maxDuration":60},"api/setup-webhook.js":{"maxDuration":30},"api/webhook.js":{"maxDuration":60}},"version":2}
