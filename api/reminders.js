@@ -11,7 +11,11 @@ const { processDueReminders } = require('../src/features/productivity');
 
 module.exports = async (req, res) => {
   try {
-    if (req.query.key !== cfg.cronSecret) { res.status(403).json({ ok: false }); return; }
+    // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically;
+    // manual triggers can use ?key=<CRON_SECRET>.
+    const header = req.headers.authorization || '';
+    const authed = req.query.key === cfg.cronSecret || header === `Bearer ${cfg.cronSecret}`;
+    if (!cfg.cronSecret || !authed) { res.status(403).json({ ok: false }); return; }
     const tg = new Telegraf(cfg.botToken).telegram;
     const n = await processDueReminders(async (userId, html) => {
       await tg.sendMessage(userId, html, { parse_mode: 'HTML', disable_web_page_preview: true });
