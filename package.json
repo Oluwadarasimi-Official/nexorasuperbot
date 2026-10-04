@@ -1,0 +1,25 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "mammoth": "^1.9.1",
+    "pdf-parse": "^1.1.1",
+    "qrcode": "^1.5.4",
+    "telegraf": "^4.16.3"
+  },
+  "description": "NexoraSuperBot \u2014 all-in-one AI operating system inside Telegram",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "main": "src/index.js",
+  "name": "nexorasuperbot",
+  "scripts": {
+    "reminders": "node scripts/reminder-worker.js",
+    "start": "node server.js",
+    "test": "node tests/smoke.js",
+    "webhook:set": "node scripts/set-webhook.js",
+    "start:polling": "node src/index.js"
+  },
+  "version": "1.0.0"
+}
