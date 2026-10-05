@@ -22,7 +22,14 @@ async function withThinking(ctx, fn) {
         } else {
           await ctx.telegram.deleteMessage(msg.chat.id, msg.message_id).catch(() => {});
         }
-      } catch { /* message may be uneditable */ }
+      } catch {
+        // edit failed (e.g. Telegram rejected the HTML) — fall back to fresh messages
+        // instead of leaving the user staring at "thinking" forever.
+        try { await ctx.telegram.deleteMessage(msg.chat.id, msg.message_id).catch(() => {}); } catch { /* no-op */ }
+        if (typeof result === 'string' && result) {
+          try { await sendLong(ctx, result); } catch { /* last resort */ }
+        }
+      }
     } else if (typeof result === 'string' && result) {
       await sendLong(ctx, result);
     }

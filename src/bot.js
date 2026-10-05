@@ -143,22 +143,16 @@ async function dispatchText(ctx, text) {
 
       // ── developer ──
       case 'code':
-        await withThinking(ctx, () => ai.oneShot(ctx.from.id, 'You are Nexora Coder, a senior engineer. Write clean, working code for the request. Brief comments, handle edge cases, 2-line usage note at the end.', params.spec));
+        await dev.genCode(ctx, params.spec || '');
         break;
       case 'debug':
-        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
-          'You are Nexora Coder. Find the bug(s), explain the root cause simply, then show the FIXED code. Do not execute anything.',
-          params.code));
+        await withThinking(ctx, () => dev.genDebug(ctx, params.code || ''));
         break;
       case 'review':
-        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
-          'You are Nexora Coder. Review for: correctness, bugs, security issues, performance, readability. Format: ✅ What\'s good, ⚠️ Issues (with severity), 💡 Improved key parts.',
-          params.code));
+        await withThinking(ctx, () => dev.genReview(ctx, params.code || ''));
         break;
       case 'explain_code':
-        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
-          'You are Nexora Coder. Explain the code: overall purpose, then step-by-step walkthrough in plain language, ending with one gotcha.',
-          params.code));
+        await withThinking(ctx, () => dev.genExplain(ctx, params.code || ''));
         break;
 
       // ── research ──
