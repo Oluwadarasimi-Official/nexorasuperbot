@@ -3,7 +3,7 @@
  * Developer Mode: /code, /debug, /review, /explain_code + source-file uploads.
  * Never executes user code — analysis only.
  */
-const { chatReply } = require('./ai');
+const { chatReply, oneShot } = require('./ai');
 const store = require('../store');
 const { withThinking, sendLong, escapeHtml, answerCb, editOrReply } = require('../tg/helpers');
 const { menuKeyboard } = require('../tg/keyboards');
@@ -20,32 +20,36 @@ function register(bot) {
     const spec = cmdText(ctx);
     if (!spec) return ctx.reply('⚡ Describe what to build: <code>/code a Python function that validates emails</code>', { parse_mode: 'HTML' });
     store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'code', success: true });
-    await withThinking(ctx, () => chatReply(ctx.from.id,
-      `You are Nexora Coder, a senior engineer. Write clean, working code for this request. Include brief comments, handle obvious edge cases, and add a 2-line usage note at the end. Request: ${spec}`));
+    await withThinking(ctx, () => oneShot(ctx.from.id,
+      'You are Nexora Coder, a senior engineer. Write clean, working code for the request. Include brief comments, handle obvious edge cases, and add a 2-line usage note at the end.',
+      spec));
   });
 
   bot.command('debug', async (ctx) => {
     const code = cmdText(ctx);
     if (!code) return ctx.reply('🐞 Paste the buggy code after /debug, or just paste code in chat and I will spot the issue.', { parse_mode: 'HTML' });
     store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'debug', success: true });
-    await withThinking(ctx, () => chatReply(ctx.from.id,
-      `You are Nexora Coder debugging. Analyze this code, find the bug(s), explain the root cause simply, then show the FIXED code. Do not execute anything.\n\n${codeBlock(code)}`));
+    await withThinking(ctx, () => oneShot(ctx.from.id,
+      'You are Nexora Coder debugging. Analyze the code, find the bug(s), explain the root cause simply, then show the FIXED code. Do not execute anything.',
+      code));
   });
 
   bot.command('review', async (ctx) => {
     const code = cmdText(ctx);
     if (!code) return ctx.reply('🔍 Paste code after /review and I will review it like a senior engineer.', { parse_mode: 'HTML' });
     store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'review', success: true });
-    await withThinking(ctx, () => chatReply(ctx.from.id,
-      `You are Nexora Coder doing a code review. Review for: correctness, bugs, security issues, performance, readability. Format: ✅ What's good (1-2 lines), ⚠️ Issues found (bullets with severity), 💡 Improved version of the key parts. Code:\n\n${codeBlock(code)}`));
+    await withThinking(ctx, () => oneShot(ctx.from.id,
+      'You are Nexora Coder doing a code review. Review for: correctness, bugs, security issues, performance, readability. Format: ✅ What\'s good (1-2 lines), ⚠️ Issues found (bullets with severity), 💡 Improved version of the key parts.',
+      code));
   });
 
   bot.command('explain_code', async (ctx) => {
     const code = cmdText(ctx);
     if (!code) return ctx.reply('📖 Paste code after /explain_code and I will explain it line by line.', { parse_mode: 'HTML' });
     store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'explain_code', success: true });
-    await withThinking(ctx, () => chatReply(ctx.from.id,
-      `You are Nexora Coder teaching. Explain this code clearly: what it does overall, then walk through the important parts step by step in plain language. End with one gotcha to watch for.\n\n${codeBlock(code)}`));
+    await withThinking(ctx, () => oneShot(ctx.from.id,
+      'You are Nexora Coder teaching. Explain the code clearly: what it does overall, then walk through the important parts step by step in plain language. End with one gotcha to watch for.',
+      code));
   });
 
   // menu shortcuts

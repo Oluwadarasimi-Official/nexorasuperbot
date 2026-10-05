@@ -121,9 +121,10 @@ async function reviseTopic(ctx, topic) {
     const weak = await store.weakTopics(ctx.from.id, 3);
     t = weak.length ? weak.map((w) => w.topic).join(', ') : 'general knowledge';
   }
-  const { chatReply } = require('./ai');
-  await withThinking(ctx, () => chatReply(ctx.from.id,
-    `Write concise WAEC/JAMB-standard revision notes on: ${t}. Structure: key definitions, must-know points as bullets, common exam traps, and 3 quick self-test questions (no answers). Keep it phone-readable.`));
+  const { chatReply, oneShot } = require('./ai');
+  await withThinking(ctx, () => oneShot(ctx.from.id,
+    'Write concise WAEC/JAMB-standard revision notes. Structure: key definitions, must-know points as bullets, common exam traps, and 3 quick self-test questions (no answers). Keep it phone-readable.',
+    `Revision topic: ${t}`));
 }
 
 function register(bot) {
@@ -180,17 +181,17 @@ function register(bot) {
     const topics = st.weakTopics || [];
     const topic = topics[0] || 'general';
     await withThinking(ctx, async () => {
-      const { chatReply } = require('./ai');
-      return chatReply(ctx.from.id, `Write concise WAEC/JAMB-standard revision notes on: ${topic}. Key definitions, must-know bullets, exam traps, 3 self-test questions.`);
+      const { chatReply, oneShot } = require('./ai');
+      return oneShot(ctx.from.id, 'Write concise WAEC/JAMB-standard revision notes. Key definitions, must-know bullets, exam traps, 3 self-test questions.', `Revision topic: ${topic}`);
     });
   });
   bot.action('study:plan', async (ctx) => {
     await answerCb(ctx);
     await withThinking(ctx, async () => {
       const weak = await store.weakTopics(ctx.from.id, 5);
-      const { chatReply } = require('./ai');
+      const { chatReply, oneShot } = require('./ai');
       const focus = weak.length ? weak.map((w) => w.topic).join(', ') : 'balanced coverage';
-      return chatReply(ctx.from.id, `Create a focused 7-day revision plan. Weak areas to prioritize: ${focus}. Give each day a theme, 2-3 concrete tasks, and one rest day. Phone-readable, motivating.`);
+      return oneShot(ctx.from.id, 'Create a focused 7-day revision plan. Give each day a theme, 2-3 concrete tasks, and one rest day. Phone-readable, motivating.', `Weak areas to prioritize: ${focus}`);
     });
   });
 

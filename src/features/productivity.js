@@ -8,7 +8,7 @@ const store = require('../store');
 const { withThinking, sendLong, editOrReply, answerCb, escapeHtml } = require('../tg/helpers');
 const { menuKeyboard } = require('../tg/keyboards');
 const { parseReminder, fmtDateTime } = require('../utils');
-const { chatReply } = require('./ai');
+const { chatReply, oneShot } = require('./ai');
 
 function cmdText(ctx) {
   return (ctx.message.text || '').replace(/^\/\w+(?:@\w+)?\s*/, '').trim();
@@ -46,7 +46,7 @@ async function planToday(ctx) {
     const habits = await store.listHabits(ctx.from.id);
     const rems = await store.listReminders(ctx.from.id);
     const brief = `Open tasks: ${tasks.map((t) => t.title).join('; ') || 'none'}\nHabits: ${habits.map((h) => h.name).join(', ') || 'none'}\nReminders today: ${rems.map((r) => r.text).join('; ') || 'none'}`;
-    return chatReply(ctx.from.id, `You are Nexora Coach. Build today's daily plan from this brief. Prioritize ruthlessly: top 3 must-dos, time blocks, one thing to drop. Keep it short and motivating.\n\n${brief}`);
+    return oneShot(ctx.from.id, 'You are Nexora Coach. Build today\'s daily plan from the brief. Prioritize ruthlessly: top 3 must-dos, time blocks, one thing to drop. Keep it short and motivating.', brief);
   });
 }
 
@@ -173,7 +173,7 @@ function register(bot) {
     await withThinking(ctx, async () => {
       const tasks = await store.listTasks(ctx.from.id);
       const brief = `Open tasks: ${tasks.map((t) => t.title).join('; ') || 'none'}`;
-      const out = await chatReply(ctx.from.id, `You are Nexora Coach. Build today's daily plan from this brief. Top 3 must-dos, time blocks, one thing to drop. Short and motivating.\n\n${brief}`);
+      const out = await oneShot(ctx.from.id, 'You are Nexora Coach. Build today\'s daily plan from the brief. Top 3 must-dos, time blocks, one thing to drop. Short and motivating.', brief);
       await sendLong(ctx, out);
       return '';
     });

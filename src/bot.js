@@ -137,22 +137,28 @@ async function dispatchText(ctx, text) {
         await withThinking(ctx, async () => {
           const weak = await store.weakTopics(ctx.from.id, 5);
           const focus = weak.length ? weak.map((w) => w.topic).join(', ') : 'balanced coverage';
-          return ai.chatReply(ctx.from.id, `Create a focused 7-day revision plan. Weak areas: ${focus}. Each day: theme + 2-3 concrete tasks. One rest day. Short, motivating, phone-readable.`);
+          return ai.oneShot(ctx.from.id, 'Create a focused 7-day revision plan. Each day: theme + 2-3 concrete tasks. One rest day. Short, motivating, phone-readable.', `Weak areas: ${focus}`);
         });
         break;
 
       // ── developer ──
       case 'code':
-        await withThinking(ctx, () => ai.chatReply(ctx.from.id, `You are Nexora Coder, a senior engineer. Write clean, working code for: ${params.spec}. Brief comments, handle edge cases, 2-line usage note at the end.`));
+        await withThinking(ctx, () => ai.oneShot(ctx.from.id, 'You are Nexora Coder, a senior engineer. Write clean, working code for the request. Brief comments, handle edge cases, 2-line usage note at the end.', params.spec));
         break;
       case 'debug':
-        await withThinking(ctx, () => ai.chatReply(ctx.from.id, `You are Nexora Coder debugging. Find the bug(s), explain the root cause simply, then show the FIXED code. Do not execute anything.\n\n<pre>${escapeHtml(params.code.slice(0, 3000))}</pre>`));
+        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
+          'You are Nexora Coder. Find the bug(s), explain the root cause simply, then show the FIXED code. Do not execute anything.',
+          params.code));
         break;
       case 'review':
-        await withThinking(ctx, () => ai.chatReply(ctx.from.id, `You are Nexora Coder reviewing code. Format: ✅ What's good, ⚠️ Issues (with severity), 💡 Improved key parts.\n\n<pre>${escapeHtml(params.code.slice(0, 3000))}</pre>`));
+        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
+          'You are Nexora Coder. Review for: correctness, bugs, security issues, performance, readability. Format: ✅ What\'s good, ⚠️ Issues (with severity), 💡 Improved key parts.',
+          params.code));
         break;
       case 'explain_code':
-        await withThinking(ctx, () => ai.chatReply(ctx.from.id, `You are Nexora Coder teaching. Explain this code: overall purpose, then step-by-step walkthrough in plain language, ending with one gotcha.\n\n<pre>${escapeHtml(params.code.slice(0, 3000))}</pre>`));
+        await withThinking(ctx, () => ai.oneShot(ctx.from.id,
+          'You are Nexora Coder. Explain the code: overall purpose, then step-by-step walkthrough in plain language, ending with one gotcha.',
+          params.code));
         break;
 
       // ── research ──

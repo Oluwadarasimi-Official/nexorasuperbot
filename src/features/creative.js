@@ -3,7 +3,7 @@
  * Creative Studio: /caption, /prompt (image-gen), /ideas, /brand.
  */
 const store = require('../store');
-const { chatReply } = require('./ai');
+const { chatReply, oneShot } = require('./ai');
 const { generateImage, enhancePrompt } = require('../ai/images');
 const { withThinking, sendLong, escapeHtml, answerCb, editOrReply } = require('../tg/helpers');
 const { menuKeyboard } = require('../tg/keyboards');
@@ -14,23 +14,27 @@ function cmdText(ctx) {
 
 async function genCaption(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'caption', success: true });
-  await withThinking(ctx, () => chatReply(ctx.from.id,
-    `Write 5 Instagram caption options for: ${brief}. Mix of short punchy and storytelling styles. Include 3-5 relevant hashtags per caption. Number them.`));
+  await withThinking(ctx, () => oneShot(ctx.from.id,
+    'Write 5 Instagram caption options for the brief. Mix short punchy and storytelling styles. Include 3-5 relevant hashtags per caption. Number them.',
+    brief));
 }
 async function genPrompt(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'prompt', success: true });
-  await withThinking(ctx, () => chatReply(ctx.from.id,
-    `Write ONE masterful AI image-generation prompt for: ${brief}. Include subject, style, lighting, composition, mood, quality tags. Then give 2 shorter variations. Format the main prompt in a code block.`));
+  await withThinking(ctx, () => oneShot(ctx.from.id,
+    'Write ONE masterful AI image-generation prompt for the brief. Include subject, style, lighting, composition, mood, quality tags. Then give 2 shorter variations. Format the main prompt in a code block.',
+    brief));
 }
 async function genIdeas(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'ideas', success: true });
-  await withThinking(ctx, () => chatReply(ctx.from.id,
-    `Generate 10 creative ideas for: ${brief}. Make them specific and non-generic, each one line with a hook. Bold the idea titles.`));
+  await withThinking(ctx, () => oneShot(ctx.from.id,
+    'Generate 10 creative ideas for the brief. Make them specific and non-generic, each one line with a hook. Bold the idea titles.',
+    brief));
 }
 async function genBrand(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'brand', success: true });
-  await withThinking(ctx, () => chatReply(ctx.from.id,
-    `Create a mini brand kit for: ${brief}. Include: 8 name ideas (bolded), 5 slogans/taglines, suggested brand voice (1 line), and 3 color-mood directions. Keep it sharp.`));
+  await withThinking(ctx, () => oneShot(ctx.from.id,
+    'Create a mini brand kit for the brief. Include: 8 name ideas (bolded), 5 slogans/taglines, suggested brand voice (1 line), and 3 color-mood directions. Keep it sharp.',
+    brief));
 }
 async function genImage(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'imagine', success: true });
