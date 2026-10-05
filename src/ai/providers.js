@@ -29,7 +29,7 @@ class AIProvider {
   async analyzeDocument() { throw new Error('not implemented'); }
 }
 
-async function fetchJson(url, { method = 'POST', headers = {}, body = undefined, timeoutMs = 90000 } = {}) {
+async function fetchJson(url, { method = 'POST', headers = {}, body = undefined, timeoutMs = 45000 } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -63,23 +63,24 @@ class GeminiProvider extends AIProvider {
     }));
   }
 
-  async generateText({ system = '', messages = [], maxTokens = 2048 } = {}) {
+  async generateText({ system = '', messages = [], maxTokens = 2048, timeoutMs = 45000 } = {}) {
     const body = {
       systemInstruction: system ? { parts: [{ text: system }] } : undefined,
       contents: this._contents(messages),
       generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
     };
-    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body });
+    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body, timeoutMs });
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
     if (!text) throw new Error('Gemini returned an empty response.');
     return text.trim();
   }
 
-  async generateStructured({ system = '', prompt = '', schemaHint = '' } = {}) {
+  async generateStructured({ system = '', prompt = '', schemaHint = '', timeoutMs = 45000 } = {}) {
     const text = await this.generateText({
       system: system + '\nRespond with ONLY valid JSON, no markdown fences, no commentary.',
       messages: [{ role: 'user', content: prompt + (schemaHint ? `\n\nJSON shape:\n${schemaHint}` : '') }],
       maxTokens: 8192,
+      timeoutMs,
     });
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     try { return JSON.parse(cleaned); }
@@ -91,7 +92,7 @@ class GeminiProvider extends AIProvider {
     }
   }
 
-  async analyzeImage({ system = '', prompt = 'Describe this image in detail.', imageBuffer, mimeType = 'image/jpeg' } = {}) {
+  async analyzeImage({ system = '', prompt = 'Describe this image in detail.', imageBuffer, mimeType = 'image/jpeg', timeoutMs = 45000 } = {}) {
     const body = {
       systemInstruction: system ? { parts: [{ text: system }] } : undefined,
       contents: [{ role: 'user', parts: [
@@ -100,13 +101,13 @@ class GeminiProvider extends AIProvider {
       ] }],
       generationConfig: { maxOutputTokens: 2048, temperature: 0.4 },
     };
-    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body });
+    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body, timeoutMs });
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
     if (!text) throw new Error('Gemini returned an empty response.');
     return text.trim();
   }
 
-  async transcribeAudio({ audioBuffer, mimeType = 'audio/ogg' } = {}) {
+  async transcribeAudio({ audioBuffer, mimeType = 'audio/ogg', timeoutMs = 45000 } = {}) {
     const body = {
       contents: [{ role: 'user', parts: [
         { inline_data: { mime_type: mimeType, data: toBase64(audioBuffer) } },
@@ -114,16 +115,17 @@ class GeminiProvider extends AIProvider {
       ] }],
       generationConfig: { maxOutputTokens: 2048, temperature: 0.1 },
     };
-    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body });
+    const data = await fetchJson(`${this.base()}:generateContent?key=${encodeURIComponent(this.key())}`, { body, timeoutMs });
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
     return text.trim();
   }
 
-  async analyzeDocument({ system = '', prompt = '', text = '' } = {}) {
+  async analyzeDocument({ system = '', prompt = '', text = '', timeoutMs = 45000 } = {}) {
     return this.generateText({
       system,
       messages: [{ role: 'user', content: `${prompt}\n\n<document>\n${text}\n</document>` }],
       maxTokens: 4096,
+      timeoutMs,
     });
   }
 }
@@ -133,7 +135,7 @@ class GroqProvider extends AIProvider {
   constructor() { super(); this.name = 'groq'; }
   key() { return cfg.groqApiKey || cfg.aiApiKey; }
 
-  async _chat({ system = '', messages = [], json = false, maxTokens = 2048 }) {
+  async _chat({ system = '', messages = [], json = false, maxTokens = 2048, timeoutMs = 45000 }) {
     const body = {
       model: cfg.groqModel,
       messages: [
@@ -145,7 +147,7 @@ class GroqProvider extends AIProvider {
       ...(json ? { response_format: { type: 'json_object' } } : {}),
     };
     const data = await fetchJson('https://api.groq.com/openai/v1/chat/completions', {
-      headers: { Authorization: `Bearer ${this.key()}`, 'Content-Type': 'application/json' }, body,
+      headers: { Authorization: `Bearer ${this.key()}`, 'Content-Type': 'application/json' }, body, timeoutMs,
     });
     const text = data?.choices?.[0]?.message?.content || '';
     if (!text) throw new Error('Groq returned an empty response.');
@@ -154,11 +156,12 @@ class GroqProvider extends AIProvider {
 
   async generateText(opts = {}) { return this._chat(opts); }
 
-  async generateStructured({ system = '', prompt = '', schemaHint = '' } = {}) {
+  async generateStructured({ system = '', prompt = '', schemaHint = '', timeoutMs = 45000 } = {}) {
     const text = await this._chat({
       system: (system || '') + '\nRespond with ONLY a valid JSON object, no markdown fences, no commentary.',
       messages: [{ role: 'user', content: prompt + (schemaHint ? `\n\nJSON shape:\n${schemaHint}` : '') }],
       json: true, maxTokens: 8192,
+      timeoutMs,
     });
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     try { return JSON.parse(cleaned); }
@@ -197,7 +200,7 @@ class FallbackProvider extends AIProvider {
     let lastErr = null;
     for (const p of this.providers) {
       try {
-        return await p[method](args);
+        return await p[method]({ ...args, timeoutMs: 25000 });
       } catch (err) {
         if (!isRetryable(err)) throw err;
         lastErr = err;
