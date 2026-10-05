@@ -11,6 +11,7 @@
  *   └── analyzeDocument({ system, prompt, text })
  */
 const { cfg } = require('../config');
+const { logEvent } = require('../logger');
 
 class UnsupportedError extends Error {
   constructor(feature, provider) {
@@ -130,6 +131,7 @@ class GeminiProvider extends AIProvider {
 /* ── Groq (text) ──────────────────────────────────────────── */
 class GroqProvider extends AIProvider {
   constructor() { super(); this.name = 'groq'; }
+  key() { return cfg.groqApiKey || cfg.aiApiKey; }
 
   async _chat({ system = '', messages = [], json = false, maxTokens = 2048 }) {
     const body = {
@@ -143,7 +145,7 @@ class GroqProvider extends AIProvider {
       ...(json ? { response_format: { type: 'json_object' } } : {}),
     };
     const data = await fetchJson('https://api.groq.com/openai/v1/chat/completions', {
-      headers: { Authorization: `Bearer ${cfg.aiApiKey}`, 'Content-Type': 'application/json' }, body,
+      headers: { Authorization: `Bearer ${this.key()}`, 'Content-Type': 'application/json' }, body,
     });
     const text = data?.choices?.[0]?.message?.content || '';
     if (!text) throw new Error('Groq returned an empty response.');
@@ -172,8 +174,53 @@ class GroqProvider extends AIProvider {
 
 /* ── factory ──────────────────────────────────────────────── */
 let singleton = null;
+let fallbackSingleton = null;
+
+function isRetryable(err) {
+  if (!err || err.name === 'UnsupportedError') return false;
+  if (err.retryable) return true;
+  // network-level failures carry no HTTP status
+  return err.status == null && /timeout|fetch failed|network|econn|socket|abort/i.test(err.message || '');
+}
+
+/**
+ * Tries providers in order, failing over on retryable errors
+ * (429 / 5xx / network). Non-retryable errors throw immediately.
+ */
+class FallbackProvider extends AIProvider {
+  constructor(providers) {
+    super();
+    this.name = 'fallback';
+    this.providers = providers;
+  }
+  async _try(method, args) {
+    let lastErr = null;
+    for (const p of this.providers) {
+      try {
+        return await p[method](args);
+      } catch (err) {
+        if (!isRetryable(err)) throw err;
+        lastErr = err;
+        try { logEvent('provider_fallback', { from: p.name, error: String(err.message).slice(0, 120) }); } catch { /* noop */ }
+      }
+    }
+    throw lastErr;
+  }
+  generateText(a) { return this._try('generateText', a); }
+  generateStructured(a) { return this._try('generateStructured', a); }
+  analyzeImage(a) { return this._try('analyzeImage', a); }
+  transcribeAudio(a) { return this._try('transcribeAudio', a); }
+  analyzeDocument(a) { return this._try('analyzeDocument', a); }
+}
+
 function getProvider(name) {
   const which = (name || cfg.aiProvider).toLowerCase();
+  // Default path: Gemini primary with Groq as automatic backup when configured.
+  if (!name && which === 'gemini' && cfg.groqApiKey) {
+    if (!cfg.aiApiKey) throw new Error('AI_API_KEY is not set.');
+    if (!fallbackSingleton) fallbackSingleton = new FallbackProvider([new GeminiProvider(), new GroqProvider()]);
+    return fallbackSingleton;
+  }
   if (singleton && singleton.name === which) return singleton;
   if (which === 'groq') singleton = new GroqProvider();
   else if (which === 'gemini') singleton = new GeminiProvider();
@@ -182,4 +229,4 @@ function getProvider(name) {
   return singleton;
 }
 
-module.exports = { AIProvider, GeminiProvider, GroqProvider, UnsupportedError, getProvider };
+module.exports = { AIProvider, GeminiProvider, GroqProvider, UnsupportedError, FallbackProvider, getProvider };

@@ -11,6 +11,7 @@ const cfg = {
   supabaseKey: process.env.SUPABASE_SERVICE_KEY || '',
   aiProvider: (process.env.AI_PROVIDER || 'gemini').toLowerCase(),
   aiApiKey: process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY || '',
+  groqApiKey: process.env.GROQ_API_KEY || '',
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
   groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
   searchProvider: (process.env.SEARCH_PROVIDER || 'tavily').toLowerCase(),
