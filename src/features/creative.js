@@ -4,7 +4,7 @@
  */
 const store = require('../store');
 const { chatReply } = require('./ai');
-const { generateImage } = require('../ai/images');
+const { generateImage, enhancePrompt } = require('../ai/images');
 const { withThinking, sendLong, escapeHtml, answerCb, editOrReply } = require('../tg/helpers');
 const { menuKeyboard } = require('../tg/keyboards');
 
@@ -34,9 +34,10 @@ async function genBrand(ctx, brief) {
 }
 async function genImage(ctx, brief) {
   store.logUsage({ userId: ctx.from.id, kind: 'command', detail: 'imagine', success: true });
-  const thinking = await ctx.reply('🎨 Generating your image — one moment...');
+  const thinking = await ctx.reply('🎨 Dreaming up the details, then painting — one moment...');
   try {
-    const buf = await generateImage(brief);
+    const prompt = await enhancePrompt(brief); // rich detailed prompt, falls back to raw brief
+    const buf = await generateImage(prompt);
     await ctx.replyWithPhoto({ source: buf }, { caption: `🎨 <i>${escapeHtml(brief)}</i>`, parse_mode: 'HTML' });
   } catch (err) {
     await ctx.reply('⚠️ Image generation failed — please try again in a moment.');
